@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title layout:title-pattern="$LAYOUT_TITLE - $CONTENT_TITLE">Finance Management System</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    
+    <!-- Specific Page CSS slot -->
+    <th:block layout:fragment="css"></th:block>
+</head>
+<body>
+
+    <!-- Sidebar Overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <a th:href="@{/dashboard}" class="brand">
+            <i class="fa-solid fa-wallet"></i> FinTrack
+        </a>
+        <ul class="sidebar-nav mt-3">
+            <li class="sidebar-nav-item">
+                <a th:href="@{/dashboard}" class="sidebar-nav-link active">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a th:href="@{/transactions}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-money-bill-transfer"></i> Transactions
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a th:href="@{/accounts}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-building-columns"></i> Accounts
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a th:href="@{/loans}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-hand-holding-dollar"></i> Loans
+                </a>
+            </li>
+            <li class="sidebar-nav-item">
+                <a th:href="@{/reports}" class="sidebar-nav-link">
+                    <i class="fa-solid fa-chart-line"></i> Reports
+                </a>
+            </li>
+            <li class="sidebar-nav-item mt-4">
+                <form th:action="@{/logout}" method="post" class="d-inline w-100">
+                    <button type="submit" class="sidebar-nav-link border-0 bg-transparent text-danger w-100 text-start">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Top Navbar -->
+        <header class="top-navbar">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link text-dark d-md-none p-0 me-3" id="sidebarToggle">
+                    <i class="fa-solid fa-bars fs-4"></i>
+                </button>
+                <h4 class="mb-0 fw-bold" layout:fragment="page-header">Dashboard</h4>
+            </div>
+            
+            <div class="user-profile d-flex align-items-center gap-3">
+                <div class="notifications">
+                    <button class="btn btn-light rounded-circle position-relative">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+                            <span class="visually-hidden">New alerts</span>
+                        </span>
+                    </button>
+                </div>
+                <div class="dropdown">
+                    <button class="btn btn-light dropdown-toggle d-flex align-items-center gap-2 rounded-pill px-3" type="button" data-bs-toggle="dropdown">
+                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                            U
+                        </div>
+                        <span class="d-none d-md-inline" sec:authentication="name">User</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="#"><i class="fa-regular fa-user me-2"></i> Profile</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="fa-solid fa-gear me-2"></i> Settings</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form th:action="@{/logout}" method="post">
+                                <button type="submit" class="dropdown-item text-danger">
+                                    <i class="fa-solid fa-right-from-bracket me-2"></i> Logout
+                                </button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+
+        <!-- Dynamic Content -->
+        <div layout:fragment="content">
+            <!-- Page specific content will go here -->
+        </div>
+
+    </main>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script th:src="@{/js/main.js}"></script>
+    
+    <!-- Specific Page JS slot -->
+    <th:block layout:fragment="script"></th:block>
+</body>
+</html>

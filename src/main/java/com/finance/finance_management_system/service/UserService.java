@@ -1,0 +1,10 @@
+package com.finance.finance_management_system.service;
+
+import com.finance.finance_management_system.dto.UserRegistrationDto;
+import com.finance.finance_management_system.entity.User;
+
+public interface UserService {
+    void registerUser(UserRegistrationDto registrationDto);
+    User findByEmail(String email);
+    boolean existsByEmail(String email);
+}

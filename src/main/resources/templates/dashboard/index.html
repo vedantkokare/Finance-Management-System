@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layouts/base}">
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+
+    <!-- Setting the Page Header for the layout -->
+    <h4 layout:fragment="page-header" class="mb-0 fw-bold">Dashboard</h4>
+
+    <!-- Main Content -->
+    <div layout:fragment="content">
+        
+        <!-- Welcome Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-primary text-white">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h3 class="fw-bold mb-2">Welcome back, <span sec:authentication="name">User</span>!</h3>
+                                <p class="mb-0 opacity-75">Here is a summary of your financial status.</p>
+                            </div>
+                            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                                <button class="btn btn-light rounded-pill px-4 fw-semibold">
+                                    <i class="fa-solid fa-plus me-2"></i> Add Transaction
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-muted fw-semibold mb-0">Total Balance</h6>
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <i class="fa-solid fa-wallet"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold mb-0">$0.00</h3>
+                        <small class="text-success"><i class="fa-solid fa-arrow-up me-1"></i>0% from last month</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-muted fw-semibold mb-0">Total Income</h6>
+                            <div class="bg-success bg-opacity-10 text-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <i class="fa-solid fa-arrow-trend-up"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold mb-0">$0.00</h3>
+                        <small class="text-success"><i class="fa-solid fa-arrow-up me-1"></i>0% from last month</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-muted fw-semibold mb-0">Total Expenses</h6>
+                            <div class="bg-danger bg-opacity-10 text-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <i class="fa-solid fa-arrow-trend-down"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold mb-0">$0.00</h3>
+                        <small class="text-danger"><i class="fa-solid fa-arrow-down me-1"></i>0% from last month</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="text-muted fw-semibold mb-0">Total Savings</h6>
+                            <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                <i class="fa-solid fa-piggy-bank"></i>
+                            </div>
+                        </div>
+                        <h3 class="fw-bold mb-0">$0.00</h3>
+                        <small class="text-muted">Target: $0.00</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts and Recent Activity placeholder -->
+        <div class="row">
+            <div class="col-lg-8 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title fw-bold mb-4">Income vs Expense</h5>
+                        <div class="d-flex align-items-center justify-content-center bg-light rounded" style="height: 300px;">
+                            <p class="text-muted mb-0"><i class="fa-solid fa-chart-bar fs-1 mb-2 d-block text-center"></i> Chart will be implemented in Phase 5</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4 mb-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="card-title fw-bold mb-0">Recent Activity</h5>
+                            <a href="#" class="text-decoration-none small fw-semibold">View All</a>
+                        </div>
+                        
+                        <div class="text-center text-muted py-5 my-4">
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                                <i class="fa-solid fa-receipt fs-4"></i>
+                            </div>
+                            <h6>No recent activity</h6>
+                            <p class="small mb-0">Your transactions will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+</body>
+</html>
