@@ -17,6 +17,11 @@ public class AuthController {
 
     private final UserService userService;
 
+    @GetMapping("/")
+    public String root() {
+        return "redirect:/login";
+    }
+
     @GetMapping("/login")
     public String login() {
         return "auth/login";
@@ -30,8 +35,8 @@ public class AuthController {
 
     @PostMapping("/register")
     public String registerUserAccount(@Valid @ModelAttribute("user") UserRegistrationDto registrationDto,
-                                      BindingResult result,
-                                      Model model) {
+            BindingResult result,
+            Model model) {
         if (userService.existsByEmail(registrationDto.getEmail())) {
             result.rejectValue("email", null, "There is already an account registered with that email");
         }

@@ -25,7 +25,7 @@ public class User {
     @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false)
+    @Column
     private String password;
 
     @Column(name = "first_name", nullable = false, length = 50)
@@ -37,6 +37,13 @@ public class User {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private AuthProvider provider;
+
+    @Column(name = "profile_picture_url")
+    private String profilePictureUrl;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
