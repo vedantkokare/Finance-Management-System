@@ -61,6 +61,9 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
 
     @Override
     public boolean isCredentialsNonExpired() {
+        if (user.getTempPasswordExpiry() != null && java.time.LocalDateTime.now().isAfter(user.getTempPasswordExpiry())) {
+            return false;
+        }
         return true;
     }
 
@@ -75,5 +78,9 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
 
     public String getProfilePictureUrl() {
         return user.getProfilePictureUrl();
+    }
+
+    public User getUser() {
+        return user;
     }
 }

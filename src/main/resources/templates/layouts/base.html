@@ -93,8 +93,8 @@
                         <span class="d-none d-md-inline fw-semibold text-dark pe-1" sec:authentication="principal.fullName">User</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 mt-2 p-2">
-                        <li><a class="dropdown-item rounded-3 py-2 px-3 fw-medium" href="#"><i class="fa-regular fa-user me-2 text-primary"></i> Profile</a></li>
-                        <li><a class="dropdown-item rounded-3 py-2 px-3 fw-medium" href="#"><i class="fa-solid fa-gear me-2 text-primary"></i> Settings</a></li>
+                        <li><a class="dropdown-item rounded-3 py-2 px-3 fw-medium" th:href="@{/settings}"><i class="fa-regular fa-user me-2 text-primary"></i> Profile</a></li>
+                        <li><a class="dropdown-item rounded-3 py-2 px-3 fw-medium" th:href="@{/settings}"><i class="fa-solid fa-gear me-2 text-primary"></i> Settings</a></li>
                         <li><hr class="dropdown-divider my-1"></li>
                         <li>
                             <form th:action="@{/logout}" method="post">

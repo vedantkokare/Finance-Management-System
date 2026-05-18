@@ -52,4 +52,7 @@ public class User {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "temp_password_expiry")
+    private LocalDateTime tempPasswordExpiry;
 }

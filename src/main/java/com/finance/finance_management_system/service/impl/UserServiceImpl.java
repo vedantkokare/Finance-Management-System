@@ -84,7 +84,19 @@ public class UserServiceImpl implements UserService {
     @Override
     public void updatePassword(User user, String newPassword) {
         user.setPassword(passwordEncoder.encode(newPassword));
+        user.setTempPasswordExpiry(null);
         userRepository.save(user);
         passwordResetTokenRepository.deleteByUser(user);
+    }
+
+    @Override
+    public String generateAndSetTemporaryPassword(User user) {
+        int randomNum = 100000 + (int)(Math.random() * 900000); // 6 random digits
+        String tempPassword = "Fin" + randomNum + "#";
+        user.setPassword(passwordEncoder.encode(tempPassword));
+        user.setTempPasswordExpiry(LocalDateTime.now().plusMinutes(10));
+        userRepository.save(user);
+        passwordResetTokenRepository.deleteByUser(user);
+        return tempPassword;
     }
 }

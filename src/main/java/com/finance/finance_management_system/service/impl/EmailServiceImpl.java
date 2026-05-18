@@ -19,7 +19,7 @@ public class EmailServiceImpl implements EmailService {
     private String senderEmail;
 
     @Override
-    public void sendPasswordResetEmail(String toEmail, String resetUrl) {
+    public boolean sendPasswordResetEmail(String toEmail, String resetUrl) {
         log.info("==================================================================");
         log.info("PASSWORD RESET REQUEST FOR EMAIL: {}", toEmail);
         log.info("CLICK THE FOLLOWING LINK TO RESET PASSWORD: {}", resetUrl);
@@ -35,11 +35,46 @@ public class EmailServiceImpl implements EmailService {
                         + resetUrl + "\n\nIf you did not request this, please ignore this email.\n\nBest regards,\nFinTrack Team");
                 mailSender.send(message);
                 log.info("Password reset email successfully sent to {}", toEmail);
+                return true;
             } else {
                 log.warn("SMTP email sender not configured. Email simulation mode active. Please use the link above in console to reset password.");
+                return false;
             }
         } catch (Exception e) {
             log.error("Failed to send password reset email to {}: {}", toEmail, e.getMessage());
+            return false;
+        }
+    }
+
+    @Override
+    public boolean sendLoginCredentialsEmail(String toEmail, String tempPassword) {
+        log.info("==================================================================");
+        log.info("LOGIN CREDENTIALS RECOVERY REQUEST FOR EMAIL: {}", toEmail);
+        log.info("TEMPORARY PASSWORD GENERATED: {}", tempPassword);
+        log.info("==================================================================");
+
+        try {
+            if (senderEmail != null && !senderEmail.isEmpty() && !senderEmail.contains("your-email")) {
+                SimpleMailMessage message = new SimpleMailMessage();
+                message.setFrom(senderEmail);
+                message.setTo(toEmail);
+                message.setSubject("Your Login Credentials - FinTrack");
+                message.setText("Hello,\n\nYou requested your login credentials for FinTrack.\n\n"
+                        + "Here are your temporary login credentials (VALID FOR 10 MINUTES):\n"
+                        + "Email: " + toEmail + "\n"
+                        + "Temporary Password: " + tempPassword + "\n\n"
+                        + "You can login immediately using these credentials. Please go to Account Settings immediately after logging in to set a permanent password.\n\n"
+                        + "Best regards,\nFinTrack Team");
+                mailSender.send(message);
+                log.info("Login credentials successfully sent to {}", toEmail);
+                return true;
+            } else {
+                log.warn("SMTP email sender not configured. Simulation mode active.");
+                return false;
+            }
+        } catch (Exception e) {
+            log.error("Failed to send login credentials email to {}: {}", toEmail, e.getMessage());
+            return false;
         }
     }
 }

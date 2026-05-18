@@ -31,26 +31,22 @@ public class PasswordResetController {
     }
 
     @PostMapping("/forgot-password")
-    public String processForgotPassword(@RequestParam("email") String email, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+    public String processForgotPassword(@RequestParam("email") String email, RedirectAttributes redirectAttributes) {
         User user = userService.findByEmail(email);
         if (user == null) {
             redirectAttributes.addFlashAttribute("error", "No account found with that email address.");
             return "redirect:/forgot-password";
         }
 
-        if (user.getProvider() == AuthProvider.GOOGLE) {
-            redirectAttributes.addFlashAttribute("error", "This email is registered via Google Login. Please click 'Continue with Google' on the login page.");
-            return "redirect:/forgot-password";
+        String tempPassword = userService.generateAndSetTemporaryPassword(user);
+        boolean emailSent = emailService.sendLoginCredentialsEmail(user.getEmail(), tempPassword);
+
+        if (emailSent) {
+            redirectAttributes.addFlashAttribute("success", "Temporary login credentials (valid for 10 minutes) have been sent to your email.");
+        } else {
+            redirectAttributes.addFlashAttribute("simulationCreds", "Dev Simulation (Valid 10m) -> Email: " + user.getEmail() + " | Temp Password: " + tempPassword);
+            redirectAttributes.addFlashAttribute("success", "Temporary login credentials have been generated.");
         }
-
-        String token = userService.createPasswordResetTokenForUser(user);
-        
-        String appUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
-        String resetUrl = appUrl + "/reset-password?token=" + token;
-
-        emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
-
-        redirectAttributes.addFlashAttribute("success", "A password reset link has been sent to your email.");
         return "redirect:/forgot-password";
     }
 

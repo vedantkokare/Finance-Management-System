@@ -59,6 +59,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     .email(email)
                     .firstName(firstName)
                     .lastName(lastName)
+                    .password(java.util.UUID.randomUUID().toString())
                     .role(Role.ROLE_USER)
                     .provider(AuthProvider.GOOGLE)
                     .profilePictureUrl(picture)
