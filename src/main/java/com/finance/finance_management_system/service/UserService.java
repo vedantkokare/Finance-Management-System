@@ -15,6 +15,4 @@ public interface UserService {
     String validatePasswordResetToken(String token);
 
     void updatePassword(User user, String newPassword);
-
-    String generateAndSetTemporaryPassword(User user);
 }

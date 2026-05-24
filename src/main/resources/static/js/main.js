@@ -17,4 +17,18 @@ document.addEventListener("DOMContentLoaded", function() {
             overlay.classList.remove("show");
         });
     }
+
+    // Set active link in sidebar based on current URL path
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll(".sidebar-nav-link");
+    navLinks.forEach(link => {
+        const href = link.getAttribute("href");
+        if (href) {
+            // Check if current path matches href or ends with matching subdirectory
+            if (currentPath === href || (href !== "/dashboard" && currentPath.startsWith(href))) {
+                navLinks.forEach(l => l.classList.remove("active"));
+                link.classList.add("active");
+            }
+        }
+    });
 });

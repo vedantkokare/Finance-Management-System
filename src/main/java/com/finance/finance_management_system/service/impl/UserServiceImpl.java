@@ -13,7 +13,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -58,7 +59,7 @@ public class UserServiceImpl implements UserService {
         PasswordResetToken resetToken = PasswordResetToken.builder()
                 .token(token)
                 .user(user)
-                .expiryDate(LocalDateTime.now().plusHours(1))
+                .expiryDate(Instant.now().plus(1, ChronoUnit.HOURS))
                 .build();
         
         passwordResetTokenRepository.save(resetToken);
@@ -73,7 +74,7 @@ public class UserServiceImpl implements UserService {
         }
         
         PasswordResetToken resetToken = tokenOpt.get();
-        if (resetToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+        if (resetToken.getExpiryDate().isBefore(Instant.now())) {
             passwordResetTokenRepository.delete(resetToken);
             return "expired";
         }
@@ -87,16 +88,5 @@ public class UserServiceImpl implements UserService {
         user.setTempPasswordExpiry(null);
         userRepository.save(user);
         passwordResetTokenRepository.deleteByUser(user);
-    }
-
-    @Override
-    public String generateAndSetTemporaryPassword(User user) {
-        int randomNum = 100000 + (int)(Math.random() * 900000); // 6 random digits
-        String tempPassword = "Fin" + randomNum + "#";
-        user.setPassword(passwordEncoder.encode(tempPassword));
-        user.setTempPasswordExpiry(LocalDateTime.now().plusMinutes(10));
-        userRepository.save(user);
-        passwordResetTokenRepository.deleteByUser(user);
-        return tempPassword;
     }
 }

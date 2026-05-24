@@ -31,21 +31,23 @@ public class PasswordResetController {
     }
 
     @PostMapping("/forgot-password")
-    public String processForgotPassword(@RequestParam("email") String email, RedirectAttributes redirectAttributes) {
+    public String processForgotPassword(@RequestParam("email") String email, HttpServletRequest request, RedirectAttributes redirectAttributes) {
         User user = userService.findByEmail(email);
         if (user == null) {
             redirectAttributes.addFlashAttribute("error", "No account found with that email address.");
             return "redirect:/forgot-password";
         }
 
-        String tempPassword = userService.generateAndSetTemporaryPassword(user);
-        boolean emailSent = emailService.sendLoginCredentialsEmail(user.getEmail(), tempPassword);
+        String token = userService.createPasswordResetTokenForUser(user);
+        String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+        String resetUrl = baseUrl + "/reset-password?token=" + token;
+
+        boolean emailSent = emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
 
         if (emailSent) {
-            redirectAttributes.addFlashAttribute("success", "Temporary login credentials (valid for 10 minutes) have been sent to your email.");
+            redirectAttributes.addFlashAttribute("success", "A password reset link has been sent to your email address.");
         } else {
-            redirectAttributes.addFlashAttribute("simulationCreds", "Dev Simulation (Valid 10m) -> Email: " + user.getEmail() + " | Temp Password: " + tempPassword);
-            redirectAttributes.addFlashAttribute("success", "Temporary login credentials have been generated.");
+            redirectAttributes.addFlashAttribute("resetLink", resetUrl);
         }
         return "redirect:/forgot-password";
     }

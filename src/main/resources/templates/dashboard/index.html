@@ -26,9 +26,9 @@
                                 <p class="mb-0 opacity-75 fs-6 fw-light">Here is a real-time summary of your financial well-being and recent cash flow.</p>
                             </div>
                             <div class="col-md-4 text-md-end">
-                                <button class="btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold text-primary shadow-sm fs-6">
+                                <a th:href="@{/transactions}" class="btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold text-primary shadow-sm fs-6">
                                     <i class="fa-solid fa-plus me-2"></i> Add Transaction
-                                </button>
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -47,10 +47,9 @@
                                 <i class="fa-solid fa-wallet fs-5"></i>
                             </div>
                         </div>
-                        <h3 class="fw-bolder mb-2 fs-2">$0.00</h3>
+                        <h3 class="fw-bolder mb-2 fs-2" th:text="'₹' + ${#numbers.formatDecimal(totalBalance, 1, 'COMMA', 2, 'POINT')}">₹0.00</h3>
                         <div class="d-flex align-items-center">
-                            <span class="badge bg-success bg-opacity-10 text-success fw-bold px-2 py-1 rounded me-2 fs-8"><i class="fa-solid fa-arrow-up me-1"></i>0.0%</span>
-                            <small class="text-muted fs-8">from last month</small>
+                            <small class="text-muted fs-8">Across all your accounts</small>
                         </div>
                     </div>
                 </div>
@@ -65,10 +64,9 @@
                                 <i class="fa-solid fa-arrow-trend-up fs-5"></i>
                             </div>
                         </div>
-                        <h3 class="fw-bolder mb-2 fs-2">$0.00</h3>
+                        <h3 class="fw-bolder mb-2 fs-2 text-success" th:text="'₹' + ${#numbers.formatDecimal(totalIncome, 1, 'COMMA', 2, 'POINT')}">₹0.00</h3>
                         <div class="d-flex align-items-center">
-                            <span class="badge bg-success bg-opacity-10 text-success fw-bold px-2 py-1 rounded me-2 fs-8"><i class="fa-solid fa-arrow-up me-1"></i>0.0%</span>
-                            <small class="text-muted fs-8">from last month</small>
+                            <small class="text-muted fs-8">All-time earnings logged</small>
                         </div>
                     </div>
                 </div>
@@ -83,10 +81,9 @@
                                 <i class="fa-solid fa-arrow-trend-down fs-5"></i>
                             </div>
                         </div>
-                        <h3 class="fw-bolder mb-2 fs-2">$0.00</h3>
+                        <h3 class="fw-bolder mb-2 fs-2 text-danger" th:text="'₹' + ${#numbers.formatDecimal(totalExpenses, 1, 'COMMA', 2, 'POINT')}">₹0.00</h3>
                         <div class="d-flex align-items-center">
-                            <span class="badge bg-danger bg-opacity-10 text-danger fw-bold px-2 py-1 rounded me-2 fs-8"><i class="fa-solid fa-arrow-down me-1"></i>0.0%</span>
-                            <small class="text-muted fs-8">from last month</small>
+                            <small class="text-muted fs-8">All-time outgoing spend</small>
                         </div>
                     </div>
                 </div>
@@ -96,21 +93,21 @@
                 <div class="card h-100 rounded-4 border-0 shadow-sm p-2 hover-scale">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="text-muted fw-semibold mb-0 text-uppercase fs-8 tracking-wider">Total Savings</h6>
+                            <h6 class="text-muted fw-semibold mb-0 text-uppercase fs-8 tracking-wider">Net Savings</h6>
                             <div class="bg-info bg-opacity-10 text-info rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 46px; height: 46px;">
                                 <i class="fa-solid fa-piggy-bank fs-5"></i>
                             </div>
                         </div>
-                        <h3 class="fw-bolder mb-2 fs-2">$0.00</h3>
+                        <h3 class="fw-bolder mb-2 fs-2 text-info" th:text="'₹' + ${#numbers.formatDecimal(totalSavings, 1, 'COMMA', 2, 'POINT')}">₹0.00</h3>
                         <div class="d-flex align-items-center">
-                            <span class="badge bg-info bg-opacity-10 text-info fw-bold px-2 py-1 rounded me-2 fs-8">Target: $0.00</span>
+                            <small class="text-muted fs-8">Income minus Expenses</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Charts and Recent Activity placeholder -->
+        <!-- Charts and Recent Activity -->
         <div class="row">
             <div class="col-lg-8 mb-4">
                 <div class="card h-100 rounded-4 border-0 shadow-sm p-3">
@@ -119,12 +116,16 @@
                             <h5 class="card-title fw-bold mb-0 text-dark">Cash Flow Analytics</h5>
                             <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fs-8 fw-semibold">Monthly Overview</span>
                         </div>
-                        <div class="d-flex flex-column align-items-center justify-content-center bg-light rounded-4" style="height: 320px; border: 1px dashed #cbd5e1;">
-                            <div class="bg-white p-3 rounded-circle shadow-sm mb-3 text-primary d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
-                                <i class="fa-solid fa-chart-line fs-3"></i>
+                        <div class="position-relative" style="height: 320px;">
+                            <!-- Placeholder for when there's no data -->
+                            <div id="chartPlaceholder" class="d-flex flex-column align-items-center justify-content-center bg-light rounded-4 h-100" style="border: 1px dashed #cbd5e1;">
+                                <div class="bg-white p-3 rounded-circle shadow-sm mb-3 text-primary d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
+                                    <i class="fa-solid fa-chart-line fs-3"></i>
+                                </div>
+                                <h6 class="fw-bold text-dark mb-1">No Analytics Data Yet</h6>
+                                <p class="text-muted fs-7 mb-0">Log transactions to visualize your cash flow trends.</p>
                             </div>
-                            <h6 class="fw-bold text-dark mb-1">Advanced Analytics</h6>
-                            <p class="text-muted fs-7 mb-0">Interactive financial charts will be activated in Phase 5</p>
+                            <canvas id="cashFlowChart" style="display: none;"></canvas>
                         </div>
                     </div>
                 </div>
@@ -135,15 +136,34 @@
                     <div class="card-body d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h5 class="card-title fw-bold mb-0 text-dark">Recent Transactions</h5>
-                            <a href="#" class="text-decoration-none fs-7 fw-bold text-primary bg-primary bg-opacity-10 px-3 py-1 rounded-pill">View All</a>
+                            <a th:href="@{/transactions}" class="text-decoration-none fs-7 fw-bold text-primary bg-primary bg-opacity-10 px-3 py-1 rounded-pill">View All</a>
                         </div>
                         
-                        <div class="text-center text-muted py-5 my-auto flex-grow-1 d-flex flex-column justify-content-center align-items-center">
+                        <div th:if="${#lists.isEmpty(recentTransactions)}" class="text-center text-muted py-5 my-auto flex-grow-1 d-flex flex-column justify-content-center align-items-center">
                             <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm border border-white" style="width: 68px; height: 68px;">
                                 <i class="fa-solid fa-receipt fs-3 text-secondary"></i>
                             </div>
                             <h6 class="fw-bold text-dark mb-1">No recent activity</h6>
                             <p class="fs-7 text-muted mb-0">Your newly logged transactions will appear directly here</p>
+                        </div>
+                        
+                        <div th:unless="${#lists.isEmpty(recentTransactions)}" class="flex-grow-1 overflow-auto" style="max-height: 320px;">
+                            <div class="list-group list-group-flush">
+                                <div th:each="tx : ${recentTransactions}" class="list-group-item px-0 py-3 border-0 border-bottom d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div th:classappend="${tx.type.name() == 'INCOME' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'}" class="rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                                            <i th:classappend="${tx.type.name() == 'INCOME' ? 'fa-solid fa-arrow-trend-up' : 'fa-solid fa-arrow-trend-down'}"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold text-dark" th:text="${tx.category}">Category</h6>
+                                            <small class="text-muted fs-8" th:text="${#temporals.format(tx.transactionDate, 'dd MMM yyyy') + ' • ' + tx.account.name}">Date • Account</small>
+                                        </div>
+                                    </div>
+                                    <div class="text-end">
+                                        <span th:classappend="${tx.type.name() == 'INCOME' ? 'text-success' : 'text-danger'}" class="fw-bold" th:text="${(tx.type.name() == 'INCOME' ? '+' : '-') + ' ₹' + #numbers.formatDecimal(tx.amount, 1, 'COMMA', 2, 'POINT')}">₹0.00</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -151,6 +171,99 @@
         </div>
         
     </div>
+
+    <!-- Script Block for Chart.js -->
+    <th:block layout:fragment="script">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script th:inline="javascript">
+            /*<![CDATA[*/
+            const monthlyIncomeData = /*[[${monthlyIncome}]]*/ {};
+            const monthlyExpenseData = /*[[${monthlyExpense}]]*/ {};
+            
+            const allMonths = Array.from(new Set([
+                ...Object.keys(monthlyIncomeData || {}),
+                ...Object.keys(monthlyExpenseData || {})
+            ])).sort();
+            
+            const incomeValues = allMonths.map(m => monthlyIncomeData[m] || 0);
+            const expenseValues = allMonths.map(m => monthlyExpenseData[m] || 0);
+            
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            const labels = allMonths.map(m => {
+                const parts = m.split('-');
+                if (parts.length === 2) {
+                    const year = parts[0];
+                    const monthIdx = parseInt(parts[1], 10) - 1;
+                    return monthNames[monthIdx] + " " + year;
+                }
+                return m;
+            });
+
+            document.addEventListener("DOMContentLoaded", function() {
+                if (allMonths.length === 0) {
+                    return;
+                }
+                
+                document.getElementById('chartPlaceholder').style.display = 'none';
+                document.getElementById('cashFlowChart').style.display = 'block';
+
+                const ctx = document.getElementById('cashFlowChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Income',
+                                data: incomeValues,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Expenses',
+                                data: expenseValues,
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                borderWidth: 3,
+                                fill: true,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    font: {
+                                        family: 'Inter',
+                                        size: 12,
+                                        weight: 'bold'
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹' + value.toLocaleString('en-IN');
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+            /*]]>*/
+        </script>
+    </th:block>
 
 </body>
 </html>
