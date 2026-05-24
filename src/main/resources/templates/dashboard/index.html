@@ -26,7 +26,7 @@
                                 <p class="mb-0 opacity-75 fs-6 fw-light">Here is a real-time summary of your financial well-being and recent cash flow.</p>
                             </div>
                             <div class="col-md-4 text-md-end">
-                                <a th:href="@{/transactions}" class="btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold text-primary shadow-sm fs-6">
+                                <a th:href="@{/transactions(add='true')}" class="btn btn-light btn-lg rounded-pill px-4 py-2 fw-bold text-primary shadow-sm fs-6">
                                     <i class="fa-solid fa-plus me-2"></i> Add Transaction
                                 </a>
                             </div>
@@ -42,7 +42,7 @@
                 <div class="card h-100 rounded-4 border-0 shadow-sm p-2 hover-scale">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h6 class="text-muted fw-semibold mb-0 text-uppercase fs-8 tracking-wider">Total Balance</h6>
+                            <h6 class="text-muted fw-semibold mb-0 text-uppercase fs-8 tracking-wider">Total Bank Balance</h6>
                             <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 46px; height: 46px;">
                                 <i class="fa-solid fa-wallet fs-5"></i>
                             </div>
@@ -117,15 +117,7 @@
                             <span class="badge bg-light text-dark border px-3 py-2 rounded-pill fs-8 fw-semibold">Monthly Overview</span>
                         </div>
                         <div class="position-relative" style="height: 320px;">
-                            <!-- Placeholder for when there's no data -->
-                            <div id="chartPlaceholder" class="d-flex flex-column align-items-center justify-content-center bg-light rounded-4 h-100" style="border: 1px dashed #cbd5e1;">
-                                <div class="bg-white p-3 rounded-circle shadow-sm mb-3 text-primary d-flex align-items-center justify-content-center" style="width: 64px; height: 64px;">
-                                    <i class="fa-solid fa-chart-line fs-3"></i>
-                                </div>
-                                <h6 class="fw-bold text-dark mb-1">No Analytics Data Yet</h6>
-                                <p class="text-muted fs-7 mb-0">Log transactions to visualize your cash flow trends.</p>
-                            </div>
-                            <canvas id="cashFlowChart" style="display: none;"></canvas>
+                            <canvas id="cashFlowChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -185,28 +177,35 @@
                 ...Object.keys(monthlyExpenseData || {})
             ])).sort();
             
-            const incomeValues = allMonths.map(m => monthlyIncomeData[m] || 0);
-            const expenseValues = allMonths.map(m => monthlyExpenseData[m] || 0);
-            
+            let incomeValues = [];
+            let expenseValues = [];
+            let labels = [];
             const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-            const labels = allMonths.map(m => {
-                const parts = m.split('-');
-                if (parts.length === 2) {
-                    const year = parts[0];
-                    const monthIdx = parseInt(parts[1], 10) - 1;
-                    return monthNames[monthIdx] + " " + year;
+
+            if (allMonths.length > 0) {
+                incomeValues = allMonths.map(m => monthlyIncomeData[m] || 0);
+                expenseValues = allMonths.map(m => monthlyExpenseData[m] || 0);
+                labels = allMonths.map(m => {
+                    const parts = m.split('-');
+                    if (parts.length === 2) {
+                        const year = parts[0];
+                        const monthIdx = parseInt(parts[1], 10) - 1;
+                        return monthNames[monthIdx] + " " + year;
+                    }
+                    return m;
+                });
+            } else {
+                // Initialize default 6 months of data
+                const today = new Date();
+                for (let i = 5; i >= 0; i--) {
+                    const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                    labels.push(monthNames[d.getMonth()] + " " + d.getFullYear());
+                    incomeValues.push(0);
+                    expenseValues.push(0);
                 }
-                return m;
-            });
+            }
 
             document.addEventListener("DOMContentLoaded", function() {
-                if (allMonths.length === 0) {
-                    return;
-                }
-                
-                document.getElementById('chartPlaceholder').style.display = 'none';
-                document.getElementById('cashFlowChart').style.display = 'block';
-
                 const ctx = document.getElementById('cashFlowChart').getContext('2d');
                 new Chart(ctx, {
                     type: 'line',

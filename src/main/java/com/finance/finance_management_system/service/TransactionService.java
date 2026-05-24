@@ -14,6 +14,10 @@ public interface TransactionService {
     List<Transaction> getTransactionsByAccount(Long accountId, User user);
     List<Transaction> getRecentTransactions(User user);
     Transaction addTransaction(Transaction transaction, Long accountId, User user);
+    Transaction addTransaction(Transaction transaction, Long accountId, User user, BigDecimal deficitAmount, String fundingSource, String fundingSourceDetails);
+    void addSplitTransactions(Transaction mainTransaction, List<Long> accountIds, List<BigDecimal> amounts, User user, BigDecimal deficitAmount, String fundingSource, String fundingSourceDetails);
+    Transaction updateTransaction(Long transactionId, Transaction updatedTransaction, Long accountId, User user);
+    void deleteTransaction(Long id, User user);
     
     BigDecimal getTotalBalance(User user);
     BigDecimal getTotalIncome(User user);

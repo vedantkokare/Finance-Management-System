@@ -17,7 +17,7 @@
                 <div class="card border-0 shadow-sm p-3 rounded-4 bg-white">
                     <div class="card-body py-1 d-flex justify-content-between align-items-center">
                         <div>
-                            <span class="text-muted fs-8 text-uppercase fw-semibold mb-1 d-block">Total Balance</span>
+                            <span class="text-muted fs-8 text-uppercase fw-semibold mb-1 d-block">Total Bank Balance</span>
                             <h3 class="fw-bold mb-0 text-dark fs-3" th:text="'₹' + ${#numbers.formatDecimal(totalBalance, 1, 'COMMA', 2, 'POINT')}">₹0.00</h3>
                         </div>
                         <div class="bg-primary bg-opacity-10 text-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 44px; height: 44px;">
@@ -136,7 +136,8 @@
                                 <th class="py-3">Category</th>
                                 <th class="py-3">Description</th>
                                 <th class="py-3 text-center">Type</th>
-                                <th class="py-3 text-end pe-4">Amount</th>
+                                <th class="py-3 text-end">Amount</th>
+                                <th class="py-3 text-center pe-4" style="width: 130px;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -152,9 +153,28 @@
                                           th:classappend="${tx.type.name() == 'INCOME' ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'}"
                                           th:text="${tx.type}">EXPENSE</span>
                                 </td>
-                                <td class="py-3 text-end pe-4 fw-bold fs-6" 
+                                <td class="py-3 text-end fw-bold fs-6" 
                                     th:classappend="${tx.type.name() == 'INCOME' ? 'text-success' : 'text-danger'}"
                                     th:text="${(tx.type.name() == 'INCOME' ? '+' : '-') + ' ₹' + #numbers.formatDecimal(tx.amount, 1, 'COMMA', 2, 'POINT')}">₹250.00</td>
+                                <td class="py-3 text-center pe-4">
+                                    <div class="d-flex justify-content-center gap-1">
+                                        <button type="button" class="btn btn-sm btn-light p-1 border-0 bg-transparent text-primary btn-view-tx" 
+                                                th:attr="data-id=${tx.id},data-amount=${tx.amount},data-type=${tx.type.name()},data-category=${tx.category},data-description=${tx.description},data-date=${tx.transactionDate},data-account-id=${tx.account.id},data-account-name=${tx.account.name}"
+                                                title="View Details">
+                                            <i class="fa-solid fa-eye fs-7"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-light p-1 border-0 bg-transparent text-secondary btn-edit-tx" 
+                                                th:attr="data-id=${tx.id},data-amount=${tx.amount},data-type=${tx.type.name()},data-category=${tx.category},data-description=${tx.description},data-date=${tx.transactionDate},data-account-id=${tx.account.id}"
+                                                title="Edit">
+                                            <i class="fa-solid fa-pen-to-square fs-7"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-light p-1 border-0 bg-transparent text-danger btn-delete-tx" 
+                                                th:attr="data-id=${tx.id},data-amount=${tx.amount},data-description=${tx.description != null && !tx.description.isEmpty() ? tx.description : tx.category}"
+                                                title="Delete">
+                                            <i class="fa-solid fa-trash fs-7"></i>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
@@ -173,14 +193,20 @@
                         <h5 class="modal-title fw-bold" id="addTransactionModalLabel"><i class="fa-solid fa-plus me-1"></i> Add Transaction</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <form th:action="@{/transactions/add}" th:object="${newTransaction}" method="post">
+                    <form th:action="@{/transactions/add}" th:object="${newTransaction}" method="post" id="addTransactionForm">
+                        <!-- Hidden inputs for funding -->
+                        <input type="hidden" name="deficitAmount" id="hiddenDeficitAmount">
+                        <input type="hidden" name="fundingSource" id="hiddenFundingSource">
+                        <input type="hidden" name="fundingSourceDetails" id="hiddenFundingSourceDetails">
+
                         <div class="modal-body p-4">
                             <!-- Account Selection -->
-                            <div class="mb-3">
-                                <label for="accountSelect" class="form-label fw-semibold text-dark fs-7">Select Account</label>
+                            <div class="mb-3" id="primaryAccountGroup">
+                                <label for="accountSelect" class="form-label fw-semibold text-dark fs-7">Select Account (Primary/Default)</label>
                                 <select class="form-select" id="accountSelect" name="accountId" required>
                                     <option th:each="acc : ${accounts}" 
                                             th:value="${acc.id}" 
+                                            th:attr="data-balance=${acc.balance}"
                                             th:text="${acc.name + ' (₹' + #numbers.formatDecimal(acc.balance, 1, 'COMMA', 2, 'POINT') + ')'}">Cash Wallet</option>
                                 </select>
                             </div>
@@ -200,6 +226,35 @@
                                         <span class="input-group-text">₹</span>
                                         <input type="number" step="0.01" class="form-control" id="amount" th:field="*{amount}" placeholder="0.00" required min="0.01">
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Split Transaction Section -->
+                            <div class="mb-3" id="splitToggleGroup">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="splitCheckbox">
+                                    <label class="form-check-label fw-semibold text-dark fs-7" for="splitCheckbox">Split across multiple accounts</label>
+                                </div>
+                            </div>
+                            <div id="splitSection" class="mb-3 border rounded-3 p-3 bg-light bg-opacity-50" style="display: none;">
+                                <h6 class="fw-bold fs-8 text-uppercase text-muted mb-3">Deduct from Accounts</h6>
+                                <!-- Loop through accounts -->
+                                <div th:each="acc : ${accounts}" class="row g-2 align-items-center mb-2 split-row">
+                                    <div class="col-7">
+                                        <span class="fw-semibold text-dark fs-7" th:text="${acc.name}">Account Name</span>
+                                        <span class="d-block text-muted fs-8" th:text="'Balance: ₹' + ${#numbers.formatDecimal(acc.balance, 1, 'COMMA', 2, 'POINT')}">Balance: ₹0.00</span>
+                                    </div>
+                                    <div class="col-5">
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">₹</span>
+                                            <input type="hidden" name="splitAccountIds" th:value="${acc.id}" class="split-id-input" disabled>
+                                            <input type="number" step="0.01" min="0" name="splitAmounts" class="form-control split-amount-input" placeholder="0.00" value="0.00" disabled>
+                                            <input type="hidden" class="split-balance" th:value="${acc.balance}">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end mt-2 fs-8 fw-semibold text-muted">
+                                    Sum: <span id="splitSum">₹0.00</span> / <span id="splitTotal">₹0.00</span>
                                 </div>
                             </div>
                             
@@ -306,20 +361,512 @@
                 </div>
             </div>
         </div>
+        <!-- Insufficient Balance Modal -->
+        <div class="modal fade" id="insufficientBalanceModal" tabindex="-1" aria-labelledby="insufficientBalanceModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 rounded-4 shadow-lg">
+                    <div class="modal-header border-0 bg-warning text-dark p-4 rounded-top-4">
+                        <h5 class="modal-title fw-bold" id="insufficientBalanceModalLabel"><i class="fa-solid fa-triangle-exclamation me-1"></i> Insufficient Balance</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4 text-center">
+                        <div class="mb-3 text-warning">
+                            <i class="fa-solid fa-circle-exclamation fa-3x"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2">Insufficient balance in the account or wallet.</h5>
+                        <p class="text-muted fs-7">Your current account balance is less than the transaction amount. Do you want to continue and add this transaction by borrowing or taking a loan for the difference?</p>
+                    </div>
+                    <div class="modal-footer border-0 p-4 pt-0 justify-content-center gap-2">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">OK</button>
+                        <button type="button" class="btn btn-warning rounded-pill px-4 text-dark fw-semibold" id="btnContinueFunding">Continue</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Funding Source Modal -->
+        <div class="modal fade" id="fundingSourceModal" tabindex="-1" aria-labelledby="fundingSourceModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 rounded-4 shadow-lg">
+                    <div class="modal-header border-0 bg-primary text-white p-4 rounded-top-4">
+                        <h5 class="modal-title fw-bold" id="fundingSourceModalLabel"><i class="fa-solid fa-question me-1"></i> Source of Remaining Funds</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <p class="text-muted fs-7 mb-4">You are short of <strong class="text-dark" id="txtDeficitAmount">₹0.00</strong>. From where did the other money come from?</p>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark fs-7">Choose Funding Source</label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="tempFundingSource" id="sourceLoan" value="Loan" checked>
+                                <label class="form-check-input-label fw-medium text-dark" for="sourceLoan">
+                                    Take a Loan
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="tempFundingSource" id="sourceFriend" value="Borrow from Friend">
+                                <label class="form-check-input-label fw-medium text-dark" for="sourceFriend">
+                                    Borrow from Friend
+                                </label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="tempFundingSource" id="sourceRelative" value="Borrow from Relative">
+                                <label class="form-check-input-label fw-medium text-dark" for="sourceRelative">
+                                    Borrow from Relative
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="fundingDetails" class="form-label fw-semibold text-dark fs-7">Lender/Friend/Relative Name (Optional)</label>
+                            <input type="text" class="form-control" id="fundingDetails" placeholder="e.g. SBI Bank, Rahul, Uncle Sam">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-4 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" id="btnBackToWarning">Back</button>
+                        <button type="button" class="btn btn-primary rounded-pill px-4 shadow-sm" id="btnConfirmFunding">Confirm & Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View Transaction Details Modal -->
+        <div class="modal fade" id="viewTransactionModal" tabindex="-1" aria-labelledby="viewTransactionModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 rounded-4 shadow-lg">
+                    <div class="modal-header border-0 bg-light p-4 rounded-top-4">
+                        <h5 class="modal-title fw-bold text-dark" id="viewTransactionModalLabel"><i class="fa-solid fa-receipt me-1"></i> Transaction Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4">
+                        <div class="table-responsive">
+                            <table class="table table-borderless align-middle mb-0">
+                                <tbody>
+                                    <tr>
+                                        <td class="fw-semibold text-muted py-2" style="width: 35%;">Date:</td>
+                                        <td class="text-dark py-2" id="viewTxDate">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold text-muted py-2">Account:</td>
+                                        <td class="text-dark py-2" id="viewTxAccount">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold text-muted py-2">Type:</td>
+                                        <td class="py-2" id="viewTxType">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold text-muted py-2">Category:</td>
+                                        <td class="text-dark py-2" id="viewTxCategory">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold text-muted py-2">Amount:</td>
+                                        <td class="fw-bold py-2 fs-5" id="viewTxAmount">-</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-semibold text-muted py-2">Description:</td>
+                                        <td class="text-dark py-2" id="viewTxDescription">-</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 p-4 pt-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Transaction Modal -->
+        <div class="modal fade" id="editTransactionModal" tabindex="-1" aria-labelledby="editTransactionModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content border-0 rounded-4 shadow-lg">
+                    <div class="modal-header border-0 bg-secondary text-white p-4 rounded-top-4">
+                        <h5 class="modal-title fw-bold" id="editTransactionModalLabel"><i class="fa-solid fa-pen-to-square me-1"></i> Edit Transaction</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form th:action="@{/transactions/update}" method="post" id="editTransactionForm">
+                        <input type="hidden" name="id" id="editTxId">
+                        <div class="modal-body p-4">
+                            <!-- Account Selection -->
+                            <div class="mb-3">
+                                <label for="editAccountSelect" class="form-label fw-semibold text-dark fs-7">Select Account</label>
+                                <select class="form-select" id="editAccountSelect" name="accountId" required>
+                                    <option th:each="acc : ${accounts}" 
+                                            th:value="${acc.id}" 
+                                            th:attr="data-balance=${acc.balance}"
+                                            th:text="${acc.name + ' (₹' + #numbers.formatDecimal(acc.balance, 1, 'COMMA', 2, 'POINT') + ')'}">Cash Wallet</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Type & Amount -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <label for="editTypeSelect" class="form-label fw-semibold text-dark fs-7">Transaction Type</label>
+                                    <select class="form-select" id="editTypeSelect" name="type" required>
+                                        <option value="EXPENSE">EXPENSE</option>
+                                        <option value="INCOME">INCOME</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label for="editAmount" class="form-label fw-semibold text-dark fs-7">Amount (₹)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" step="0.01" class="form-control" id="editAmount" name="amount" placeholder="0.00" required min="0.01">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Category & Date -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-6">
+                                    <label for="editCategory" class="form-label fw-semibold text-dark fs-7">Category</label>
+                                    <select class="form-select" id="editCategory" name="category" required>
+                                        <option value="Food">Food</option>
+                                        <option value="Travel">Travel</option>
+                                        <option value="Salary">Salary</option>
+                                        <option value="Rent">Rent</option>
+                                        <option value="Shopping">Shopping</option>
+                                        <option value="Utilities">Utilities</option>
+                                        <option value="Medical">Medical</option>
+                                        <option value="Investment">Investment</option>
+                                        <option value="Others">Others</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label for="editTransactionDate" class="form-label fw-semibold text-dark fs-7">Date</label>
+                                    <input type="date" class="form-control" id="editTransactionDate" name="transactionDate" required>
+                                </div>
+                            </div>
+                            
+                            <!-- Description -->
+                            <div class="mb-3">
+                                <label for="editDescription" class="form-label fw-semibold text-dark fs-7">Description</label>
+                                <input type="text" class="form-control" id="editDescription" name="description" placeholder="e.g. Dinner, Monthly salary, Metro recharge">
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 p-4 pt-0">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-secondary rounded-pill px-4 shadow-sm"><i class="fa-solid fa-floppy-disk me-2"></i> Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Confirmation Modal -->
+        <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content border-0 rounded-4 shadow-lg">
+                    <div class="modal-header border-0 bg-light p-3 rounded-top-4">
+                        <h6 class="modal-title fw-bold text-dark" id="confirmationModalLabel">Confirm Action</h6>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-3 text-center">
+                        <p class="mb-0 text-dark fs-7" id="confirmationMessage">Are you sure you want to proceed?</p>
+                    </div>
+                    <div class="modal-footer border-0 p-3 pt-0 justify-content-center gap-2">
+                        <button type="button" class="btn btn-sm btn-light rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="btnConfirmAction">Confirm</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hidden delete form -->
+        <form id="deleteTransactionForm" method="post" style="display: none;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+        </form>
     </div>
 
-    <!-- Script Block to set default transaction date to today -->
+    <!-- Script Block for transaction features -->
     <th:block layout:fragment="script">
         <script>
             document.addEventListener("DOMContentLoaded", function() {
+                // Set default transaction date to today if empty
                 const dateInput = document.getElementById("transactionDate");
                 if (dateInput && !dateInput.value) {
                     const today = new Date().toISOString().split('T')[0];
                     dateInput.value = today;
                 }
+
+                // Check for "add=true" query parameter to automatically open the Add Transaction modal
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('add') === 'true') {
+                    const addModalElement = document.getElementById('addTransactionModal');
+                    if (addModalElement) {
+                        new bootstrap.Modal(addModalElement).show();
+                    }
+                }
+
+                // Split Transaction Checkbox Toggle logic
+                const splitCheckbox = document.getElementById("splitCheckbox");
+                const splitSection = document.getElementById("splitSection");
+                const primaryAccountGroup = document.getElementById("primaryAccountGroup");
+                const accountSelect = document.getElementById("accountSelect");
+                const amountInput = document.getElementById("amount");
+                const splitTotalSpan = document.getElementById("splitTotal");
+                const splitSumSpan = document.getElementById("splitSum");
+                const splitAmountInputs = document.querySelectorAll(".split-amount-input");
+                const splitIdInputs = document.querySelectorAll(".split-id-input");
+
+                function updateSplitTotals() {
+                    const totalVal = parseFloat(amountInput.value) || 0;
+                    splitTotalSpan.textContent = "₹" + totalVal.toFixed(2);
+                    
+                    let sum = 0;
+                    splitAmountInputs.forEach(input => {
+                        sum += parseFloat(input.value) || 0;
+                    });
+                    splitSumSpan.textContent = "₹" + sum.toFixed(2);
+
+                    if (Math.abs(sum - totalVal) < 0.01) {
+                        splitSumSpan.className = "text-success fw-bold";
+                    } else {
+                        splitSumSpan.className = "text-danger fw-bold";
+                    }
+                }
+
+                if (splitCheckbox) {
+                    splitCheckbox.addEventListener("change", function() {
+                        if (this.checked) {
+                            splitSection.style.display = "block";
+                            // Enable fields so they submit
+                            splitAmountInputs.forEach(input => {
+                                input.disabled = false;
+                            });
+                            splitIdInputs.forEach(input => {
+                                input.disabled = false;
+                            });
+                            updateSplitTotals();
+                        } else {
+                            splitSection.style.display = "none";
+                            // Disable fields so they do not submit
+                            splitAmountInputs.forEach(input => {
+                                input.disabled = true;
+                            });
+                            splitIdInputs.forEach(input => {
+                                input.disabled = true;
+                            });
+                        }
+                    });
+                }
+
+                if (amountInput) {
+                    amountInput.addEventListener("input", updateSplitTotals);
+                }
+                splitAmountInputs.forEach(input => {
+                    input.addEventListener("input", updateSplitTotals);
+                });
+
+                // Validation and intercepting form submission for insufficient balance
+                const addForm = document.getElementById("addTransactionForm");
+                const typeSelect = document.getElementById("typeSelect");
+                
+                let computedDeficit = 0;
+
+                addForm.addEventListener("submit", function(e) {
+                    // Reset hidden fields
+                    document.getElementById("hiddenDeficitAmount").value = "";
+                    document.getElementById("hiddenFundingSource").value = "";
+                    document.getElementById("hiddenFundingSourceDetails").value = "";
+
+                    const txType = typeSelect.value;
+                    if (txType !== "EXPENSE") {
+                        return; // Let normal income submit
+                    }
+
+                    const totalAmount = parseFloat(amountInput.value) || 0;
+                    if (totalAmount <= 0) return;
+
+                    if (splitCheckbox && splitCheckbox.checked) {
+                        // Validate split sum equals total
+                        let splitSum = 0;
+                        splitAmountInputs.forEach(input => {
+                            splitSum += parseFloat(input.value) || 0;
+                        });
+
+                        if (Math.abs(splitSum - totalAmount) > 0.01) {
+                            e.preventDefault();
+                            alert("The sum of split amounts (₹" + splitSum.toFixed(2) + ") must equal the total transaction amount (₹" + totalAmount.toFixed(2) + ").");
+                            return;
+                        }
+
+                        // Calculate total deficit across split accounts
+                        let totalDeficit = 0;
+                        splitAmountInputs.forEach(input => {
+                            const val = parseFloat(input.value) || 0;
+                            const row = input.closest(".split-row");
+                            const balInput = row.querySelector(".split-balance");
+                            const balance = parseFloat(balInput.value) || 0;
+                            if (val > balance) {
+                                totalDeficit += (val - balance);
+                            }
+                        });
+
+                        if (totalDeficit > 0.005) {
+                            e.preventDefault();
+                            computedDeficit = totalDeficit;
+                            // Hide Add modal and show warning
+                            bootstrap.Modal.getInstance(document.getElementById('addTransactionModal')).hide();
+                            new bootstrap.Modal(document.getElementById('insufficientBalanceModal')).show();
+                        }
+                    } else {
+                        // Regular single account validation
+                        const selectedOption = accountSelect.options[accountSelect.selectedIndex];
+                        const balance = parseFloat(selectedOption.getAttribute("data-balance")) || 0;
+
+                        if (totalAmount > balance) {
+                            e.preventDefault();
+                            computedDeficit = totalAmount - balance;
+                            // Hide Add modal and show warning
+                            bootstrap.Modal.getInstance(document.getElementById('addTransactionModal')).hide();
+                            new bootstrap.Modal(document.getElementById('insufficientBalanceModal')).show();
+                        }
+                    }
+                });
+
+                // Insufficient Balance & Funding Modal transitions
+                const btnContinueFunding = document.getElementById("btnContinueFunding");
+                btnContinueFunding.addEventListener("click", function() {
+                    bootstrap.Modal.getInstance(document.getElementById('insufficientBalanceModal')).hide();
+                    document.getElementById("txtDeficitAmount").textContent = "₹" + computedDeficit.toFixed(2);
+                    new bootstrap.Modal(document.getElementById('fundingSourceModal')).show();
+                });
+
+                const btnBackToWarning = document.getElementById("btnBackToWarning");
+                btnBackToWarning.addEventListener("click", function() {
+                    bootstrap.Modal.getInstance(document.getElementById('fundingSourceModal')).hide();
+                    new bootstrap.Modal(document.getElementById('insufficientBalanceModal')).show();
+                });
+
+                const btnConfirmFunding = document.getElementById("btnConfirmFunding");
+                btnConfirmFunding.addEventListener("click", function() {
+                    const checkedSource = document.querySelector('input[name="tempFundingSource"]:checked').value;
+                    const detailsVal = document.getElementById("fundingDetails").value;
+
+                    // Set hidden inputs
+                    document.getElementById("hiddenDeficitAmount").value = computedDeficit.toFixed(2);
+                    document.getElementById("hiddenFundingSource").value = checkedSource;
+                    document.getElementById("hiddenFundingSourceDetails").value = detailsVal;
+
+                    // Close modal and submit
+                    bootstrap.Modal.getInstance(document.getElementById('fundingSourceModal')).hide();
+                    addForm.submit();
+                });
+
+                // View Details click handler
+                document.querySelectorAll(".btn-view-tx").forEach(btn => {
+                    btn.addEventListener("click", function() {
+                        const id = this.getAttribute("data-id");
+                        const date = this.getAttribute("data-date");
+                        const accountName = this.getAttribute("data-account-name");
+                        const type = this.getAttribute("data-type");
+                        const category = this.getAttribute("data-category");
+                        const amount = this.getAttribute("data-amount");
+                        const description = this.getAttribute("data-description") || "-";
+
+                        document.getElementById("viewTxDate").textContent = date;
+                        document.getElementById("viewTxAccount").textContent = accountName;
+                        document.getElementById("viewTxCategory").textContent = category;
+                        document.getElementById("viewTxDescription").textContent = description;
+
+                        const typeBadge = document.getElementById("viewTxType");
+                        typeBadge.textContent = type;
+                        if (type === "INCOME") {
+                            typeBadge.className = "badge bg-success bg-opacity-10 text-success px-3 py-1.5 rounded-pill fs-8 fw-bold";
+                            document.getElementById("viewTxAmount").textContent = "+ ₹" + parseFloat(amount).toFixed(2);
+                            document.getElementById("viewTxAmount").className = "fw-bold py-2 fs-5 text-success";
+                        } else {
+                            typeBadge.className = "badge bg-danger bg-opacity-10 text-danger px-3 py-1.5 rounded-pill fs-8 fw-bold";
+                            document.getElementById("viewTxAmount").textContent = "- ₹" + parseFloat(amount).toFixed(2);
+                            document.getElementById("viewTxAmount").className = "fw-bold py-2 fs-5 text-danger";
+                        }
+
+                        new bootstrap.Modal(document.getElementById('viewTransactionModal')).show();
+                    });
+                });
+
+                // Edit Click Handler
+                document.querySelectorAll(".btn-edit-tx").forEach(btn => {
+                    btn.addEventListener("click", function() {
+                        const id = this.getAttribute("data-id");
+                        const amount = this.getAttribute("data-amount");
+                        const type = this.getAttribute("data-type");
+                        const category = this.getAttribute("data-category");
+                        const description = this.getAttribute("data-description");
+                        const date = this.getAttribute("data-date");
+                        const accountId = this.getAttribute("data-account-id");
+
+                        document.getElementById("editTxId").value = id;
+                        document.getElementById("editAmount").value = amount;
+                        document.getElementById("editTypeSelect").value = type;
+                        document.getElementById("editCategory").value = category;
+                        document.getElementById("editDescription").value = description;
+                        document.getElementById("editTransactionDate").value = date;
+                        document.getElementById("editAccountSelect").value = accountId;
+
+                        new bootstrap.Modal(document.getElementById('editTransactionModal')).show();
+                    });
+                });
+
+                // Edit Form Submit Handler with confirmation dialog
+                const editForm = document.getElementById("editTransactionForm");
+                let confirmationConfirmed = false;
+                editForm.addEventListener("submit", function(e) {
+                    if (!confirmationConfirmed) {
+                        e.preventDefault();
+                        
+                        document.getElementById("confirmationMessage").textContent = "Are you sure you want to update this transaction? The account balances will be adjusted accordingly.";
+                        
+                        // Show confirmation modal
+                        const confModalObj = new bootstrap.Modal(document.getElementById('confirmationModal'));
+                        confModalObj.show();
+
+                        // Bind Confirm Action button
+                        const btnConfirm = document.getElementById("btnConfirmAction");
+                        
+                        // Remove any old click listeners to prevent duplicates
+                        const newBtnConfirm = btnConfirm.cloneNode(true);
+                        btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
+
+                        newBtnConfirm.addEventListener("click", function() {
+                            confirmationConfirmed = true;
+                            confModalObj.hide();
+                            bootstrap.Modal.getInstance(document.getElementById('editTransactionModal')).hide();
+                            editForm.submit();
+                        });
+                    }
+                });
+
+                // Delete Click Handler with confirmation dialog
+                const deleteForm = document.getElementById("deleteTransactionForm");
+                document.querySelectorAll(".btn-delete-tx").forEach(btn => {
+                    btn.addEventListener("click", function() {
+                        const id = this.getAttribute("data-id");
+                        const amount = parseFloat(this.getAttribute("data-amount")).toFixed(2);
+                        const description = this.getAttribute("data-description");
+
+                        document.getElementById("confirmationMessage").textContent = "Are you sure you want to delete the transaction of ₹" + amount + " (" + description + ")? This action will revert its effect on the account balance.";
+                        
+                        const confModalObj = new bootstrap.Modal(document.getElementById('confirmationModal'));
+                        confModalObj.show();
+
+                        // Bind Confirm Action button
+                        const btnConfirm = document.getElementById("btnConfirmAction");
+                        const newBtnConfirm = btnConfirm.cloneNode(true);
+                        btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm);
+
+                        newBtnConfirm.addEventListener("click", function() {
+                            confModalObj.hide();
+                            deleteForm.action = "/transactions/delete/" + id;
+                            deleteForm.submit();
+                        });
+                    });
+                });
+
             });
         </script>
     </th:block>
-
 </body>
 </html>

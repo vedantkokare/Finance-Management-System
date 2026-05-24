@@ -49,8 +49,33 @@ public class TransactionServiceImpl implements TransactionService {
 
     @Override
     public Transaction addTransaction(Transaction transaction, Long accountId, User user) {
+        return addTransaction(transaction, accountId, user, null, null, null);
+    }
+
+    @Override
+    public Transaction addTransaction(Transaction transaction, Long accountId, User user, BigDecimal deficitAmount, String fundingSource, String fundingSourceDetails) {
         Account account = accountRepository.findByIdAndUser(accountId, user)
                 .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+        // If there's a deficit that is funded externally, record that transaction first
+        if (deficitAmount != null && deficitAmount.compareTo(BigDecimal.ZERO) > 0 && fundingSource != null && !fundingSource.isEmpty()) {
+            String detailsSuffix = (fundingSourceDetails != null && !fundingSourceDetails.trim().isEmpty()) 
+                    ? " (" + fundingSourceDetails.trim() + ")" : "";
+            
+            Transaction fundingTx = Transaction.builder()
+                    .amount(deficitAmount)
+                    .type(TransactionType.INCOME)
+                    .category(fundingSource)
+                    .description("Covered deficit for " + (transaction.getDescription() != null && !transaction.getDescription().isEmpty() ? transaction.getDescription() : transaction.getCategory()) + detailsSuffix)
+                    .transactionDate(transaction.getTransactionDate() != null ? transaction.getTransactionDate() : LocalDate.now())
+                    .account(account)
+                    .user(user)
+                    .build();
+            
+            // Adjust balance for the funding transaction
+            account.setBalance(account.getBalance().add(deficitAmount));
+            transactionRepository.save(fundingTx);
+        }
 
         transaction.setUser(user);
         transaction.setAccount(account);
@@ -67,6 +92,127 @@ public class TransactionServiceImpl implements TransactionService {
 
         accountRepository.save(account);
         return transactionRepository.save(transaction);
+    }
+
+    @Override
+    public void addSplitTransactions(Transaction mainTransaction, List<Long> accountIds, List<BigDecimal> amounts, User user, BigDecimal deficitAmount, String fundingSource, String fundingSourceDetails) {
+        // If there's a deficit, record the loan/borrow transaction first on the primary account
+        if (deficitAmount != null && deficitAmount.compareTo(BigDecimal.ZERO) > 0 && fundingSource != null && !fundingSource.isEmpty()) {
+            Account primaryAccount = accountRepository.findByIdAndUser(mainTransaction.getAccount() != null ? mainTransaction.getAccount().getId() : accountIds.get(0), user)
+                    .orElseThrow(() -> new IllegalArgumentException("Primary account not found"));
+            
+            String detailsSuffix = (fundingSourceDetails != null && !fundingSourceDetails.trim().isEmpty()) 
+                    ? " (" + fundingSourceDetails.trim() + ")" : "";
+            
+            Transaction fundingTx = Transaction.builder()
+                    .amount(deficitAmount)
+                    .type(TransactionType.INCOME)
+                    .category(fundingSource)
+                    .description("Covered deficit for split expense: " + (mainTransaction.getDescription() != null && !mainTransaction.getDescription().isEmpty() ? mainTransaction.getDescription() : mainTransaction.getCategory()) + detailsSuffix)
+                    .transactionDate(mainTransaction.getTransactionDate() != null ? mainTransaction.getTransactionDate() : LocalDate.now())
+                    .account(primaryAccount)
+                    .user(user)
+                    .build();
+            
+            primaryAccount.setBalance(primaryAccount.getBalance().add(deficitAmount));
+            transactionRepository.save(fundingTx);
+            accountRepository.save(primaryAccount);
+        }
+
+        // Now save a transaction for each split
+        for (int i = 0; i < accountIds.size(); i++) {
+            Long accId = accountIds.get(i);
+            BigDecimal amount = amounts.get(i);
+            if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) continue;
+
+            Account account = accountRepository.findByIdAndUser(accId, user)
+                    .orElseThrow(() -> new IllegalArgumentException("Account not found"));
+
+            String suffix = " (Split: " + account.getName() + ")";
+            String desc = (mainTransaction.getDescription() != null ? mainTransaction.getDescription() : "") + suffix;
+            if (desc.length() > 255) {
+                desc = desc.substring(0, 252) + "...";
+            }
+
+            Transaction splitTx = Transaction.builder()
+                    .amount(amount)
+                    .type(mainTransaction.getType())
+                    .category(mainTransaction.getCategory())
+                    .description(desc)
+                    .transactionDate(mainTransaction.getTransactionDate() != null ? mainTransaction.getTransactionDate() : LocalDate.now())
+                    .account(account)
+                    .user(user)
+                    .build();
+
+            if (mainTransaction.getType() == TransactionType.INCOME) {
+                account.setBalance(account.getBalance().add(amount));
+            } else {
+                account.setBalance(account.getBalance().subtract(amount));
+            }
+
+            transactionRepository.save(splitTx);
+            accountRepository.save(account);
+        }
+    }
+
+    @Override
+    public Transaction updateTransaction(Long transactionId, Transaction updatedTransaction, Long accountId, User user) {
+        Transaction existing = transactionRepository.findById(transactionId)
+                .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
+        
+        if (!existing.getUser().getId().equals(user.getId())) {
+            throw new SecurityException("Unauthorized access to transaction");
+        }
+
+        // 1. Reverse the old transaction amount on the old account
+        Account oldAccount = existing.getAccount();
+        if (existing.getType() == TransactionType.INCOME) {
+            oldAccount.setBalance(oldAccount.getBalance().subtract(existing.getAmount()));
+        } else {
+            oldAccount.setBalance(oldAccount.getBalance().add(existing.getAmount()));
+        }
+        accountRepository.save(oldAccount);
+
+        // 2. Fetch new account
+        Account newAccount = accountRepository.findByIdAndUser(accountId, user)
+                .orElseThrow(() -> new IllegalArgumentException("New account not found"));
+
+        // 3. Update existing transaction details
+        existing.setAmount(updatedTransaction.getAmount());
+        existing.setCategory(updatedTransaction.getCategory());
+        existing.setDescription(updatedTransaction.getDescription());
+        existing.setTransactionDate(updatedTransaction.getTransactionDate() != null ? updatedTransaction.getTransactionDate() : LocalDate.now());
+        existing.setAccount(newAccount);
+        existing.setType(updatedTransaction.getType());
+
+        // 4. Apply new transaction amount to new account
+        if (existing.getType() == TransactionType.INCOME) {
+            newAccount.setBalance(newAccount.getBalance().add(existing.getAmount()));
+        } else {
+            newAccount.setBalance(newAccount.getBalance().subtract(existing.getAmount()));
+        }
+        accountRepository.save(newAccount);
+
+        return transactionRepository.save(existing);
+    }
+
+    @Override
+    public void deleteTransaction(Long id, User user) {
+        Transaction transaction = transactionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Transaction not found"));
+
+        if (!transaction.getUser().getId().equals(user.getId())) {
+            throw new SecurityException("Unauthorized access to transaction");
+        }
+
+        Account account = transaction.getAccount();
+        if (transaction.getType() == TransactionType.INCOME) {
+            account.setBalance(account.getBalance().subtract(transaction.getAmount()));
+        } else {
+            account.setBalance(account.getBalance().add(transaction.getAmount()));
+        }
+        accountRepository.save(account);
+        transactionRepository.delete(transaction);
     }
 
     @Override

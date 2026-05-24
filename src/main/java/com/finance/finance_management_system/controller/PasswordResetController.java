@@ -1,6 +1,5 @@
 package com.finance.finance_management_system.controller;
 
-import com.finance.finance_management_system.entity.AuthProvider;
 import com.finance.finance_management_system.entity.PasswordResetToken;
 import com.finance.finance_management_system.entity.User;
 import com.finance.finance_management_system.repository.PasswordResetTokenRepository;
@@ -31,7 +30,8 @@ public class PasswordResetController {
     }
 
     @PostMapping("/forgot-password")
-    public String processForgotPassword(@RequestParam("email") String email, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+    public String processForgotPassword(@RequestParam("email") String email, HttpServletRequest request,
+            RedirectAttributes redirectAttributes) {
         User user = userService.findByEmail(email);
         if (user == null) {
             redirectAttributes.addFlashAttribute("error", "No account found with that email address.");
@@ -45,7 +45,8 @@ public class PasswordResetController {
         boolean emailSent = emailService.sendPasswordResetEmail(user.getEmail(), resetUrl);
 
         if (emailSent) {
-            redirectAttributes.addFlashAttribute("success", "A password reset link has been sent to your email address.");
+            redirectAttributes.addFlashAttribute("success",
+                    "A password reset link has been sent to your email address.");
         } else {
             redirectAttributes.addFlashAttribute("resetLink", resetUrl);
         }
@@ -53,7 +54,8 @@ public class PasswordResetController {
     }
 
     @GetMapping("/reset-password")
-    public String showResetPasswordForm(@RequestParam("token") String token, Model model, RedirectAttributes redirectAttributes) {
+    public String showResetPasswordForm(@RequestParam("token") String token, Model model,
+            RedirectAttributes redirectAttributes) {
         String result = userService.validatePasswordResetToken(token);
         if (result != null) {
             redirectAttributes.addFlashAttribute("error", "The password reset link is invalid or expired.");
@@ -66,9 +68,9 @@ public class PasswordResetController {
 
     @PostMapping("/reset-password")
     public String processResetPassword(@RequestParam("token") String token,
-                                       @RequestParam("password") String password,
-                                       @RequestParam("confirmPassword") String confirmPassword,
-                                       RedirectAttributes redirectAttributes) {
+            @RequestParam("password") String password,
+            @RequestParam("confirmPassword") String confirmPassword,
+            RedirectAttributes redirectAttributes) {
         if (!password.equals(confirmPassword)) {
             redirectAttributes.addFlashAttribute("error", "Passwords do not match.");
             return "redirect:/reset-password?token=" + token;
@@ -91,7 +93,8 @@ public class PasswordResetController {
             userService.updatePassword(user, password);
         }
 
-        redirectAttributes.addFlashAttribute("resetSuccess", "Your password has been successfully reset. You can now login.");
+        redirectAttributes.addFlashAttribute("resetSuccess",
+                "Your password has been successfully reset. You can now login.");
         return "redirect:/login";
     }
 }

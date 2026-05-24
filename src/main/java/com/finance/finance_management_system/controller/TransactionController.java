@@ -63,13 +63,53 @@ public class TransactionController {
     public String addTransaction(@AuthenticationPrincipal CustomUserDetails userDetails,
                                  @ModelAttribute("newTransaction") Transaction transaction,
                                  @RequestParam("accountId") Long accountId,
+                                 @RequestParam(value = "splitAccountIds", required = false) List<Long> splitAccountIds,
+                                 @RequestParam(value = "splitAmounts", required = false) List<BigDecimal> splitAmounts,
+                                 @RequestParam(value = "deficitAmount", required = false) BigDecimal deficitAmount,
+                                 @RequestParam(value = "fundingSource", required = false) String fundingSource,
+                                 @RequestParam(value = "fundingSourceDetails", required = false) String fundingSourceDetails,
                                  RedirectAttributes redirectAttributes) {
         User user = userDetails.getUser();
         try {
-            transactionService.addTransaction(transaction, accountId, user);
-            redirectAttributes.addFlashAttribute("success", "Transaction added successfully!");
+            if (splitAccountIds != null && !splitAccountIds.isEmpty() && splitAmounts != null && !splitAmounts.isEmpty()) {
+                transactionService.addSplitTransactions(transaction, splitAccountIds, splitAmounts, user, deficitAmount, fundingSource, fundingSourceDetails);
+                redirectAttributes.addFlashAttribute("success", "Split transactions added successfully!");
+            } else {
+                transactionService.addTransaction(transaction, accountId, user, deficitAmount, fundingSource, fundingSourceDetails);
+                redirectAttributes.addFlashAttribute("success", "Transaction added successfully!");
+            }
         } catch (Exception e) {
             redirectAttributes.addFlashAttribute("error", "Error adding transaction: " + e.getMessage());
+        }
+        return "redirect:/transactions";
+    }
+
+    @PostMapping("/transactions/update")
+    public String updateTransaction(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                    @RequestParam("id") Long id,
+                                    @ModelAttribute("transaction") Transaction transaction,
+                                    @RequestParam("accountId") Long accountId,
+                                    RedirectAttributes redirectAttributes) {
+        User user = userDetails.getUser();
+        try {
+            transactionService.updateTransaction(id, transaction, accountId, user);
+            redirectAttributes.addFlashAttribute("success", "Transaction updated successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error updating transaction: " + e.getMessage());
+        }
+        return "redirect:/transactions";
+    }
+
+    @PostMapping("/transactions/delete/{id}")
+    public String deleteTransaction(@AuthenticationPrincipal CustomUserDetails userDetails,
+                                    @PathVariable("id") Long id,
+                                    RedirectAttributes redirectAttributes) {
+        User user = userDetails.getUser();
+        try {
+            transactionService.deleteTransaction(id, user);
+            redirectAttributes.addFlashAttribute("success", "Transaction deleted successfully!");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error deleting transaction: " + e.getMessage());
         }
         return "redirect:/transactions";
     }

@@ -376,3 +376,11 @@ h1, h2, h3, h4, h5, h6, .brand {
         opacity: 1;
     }
 }
+
+/* Fix z-index stacking of modals and backdrops on top of sidebar and top navbar */
+.modal {
+    z-index: 1060 !important;
+}
+.modal-backdrop {
+    z-index: 1050 !important;
+}
